@@ -1,0 +1,46 @@
+---
+sidebar_position: 1
+title: ADR-001 - Self-Hosting
+---
+
+# ADR-001 — Self-Host the Automation Platform
+
+**Status:** Accepted
+
+## Context
+
+I need somewhere to run n8n continuously so it can receive Telegram messages, talk to Notion, call external APIs, and run automations in the background.
+
+n8n Cloud would be the easiest option, but this is also a personal project and a good opportunity to run my own small infrastructure.
+
+## Decision
+
+I'll **self-host the platform on a VPS** instead of using n8n Cloud.
+
+The different components will run in Docker containers.
+
+## Why?
+
+Mainly because I want to:
+
+- Keep recurring costs low.
+- Have full control over the environment.
+- Avoid paying based on workflow executions.
+- Be free to add other services to the VPS later.
+- Learn more about running a small production-like environment.
+
+And, quite simply, running it myself is part of the fun of the project.
+
+## Trade-offs
+
+Self-hosting means I also get to deal with the less exciting parts:
+
+- VPS administration.
+- Docker maintenance.
+- HTTPS and networking.
+- n8n upgrades.
+- Backups.
+- Security updates.
+- Troubleshooting when something inevitably breaks.
+
+For a small personal platform, that feels like a reasonable trade-off.

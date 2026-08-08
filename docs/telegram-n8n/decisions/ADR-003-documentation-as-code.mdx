@@ -1,0 +1,73 @@
+---
+sidebar_position: 3
+title: ADR-003 - Documentation as Code
+---
+
+# ADR-003 — Keep the Documentation as Code
+
+**Status:** Accepted
+
+## Context
+
+I want to document this project as I build it, both as a reference for myself and as a way to keep track of what I learned along the way.
+
+I also don't want documentation to become a separate thing that I have to remember to maintain somewhere else.
+
+## Decision
+
+I'll keep the documentation in Git and treat it like code.
+
+The setup is:
+
+- **Docusaurus** for the documentation website.
+- **Markdown** for the content.
+- **Mermaid** for diagrams.
+- **GitHub** as the source of truth.
+- **GitHub Actions** for build and deployment.
+- **GitHub Pages** for hosting.
+- **doc.preau.org** as the public URL.
+
+## Why?
+
+It's simple and fits naturally with how I'm building the project.
+
+I get:
+
+- Documentation stored in Git.
+- Full history of my changes.
+- Mermaid diagrams living next to the documentation.
+- No CMS to maintain.
+- Automatic deployment whenever I push an update.
+- Free static hosting with GitHub Pages.
+
+Most importantly, documenting something becomes part of the same workflow as building it.
+
+## How it works
+
+```mermaid
+flowchart LR
+    A[Write Markdown] --> B[Git Commit]
+    B --> C[GitHub]
+    C --> D[GitHub Actions]
+    D --> E[Docusaurus Build]
+    E --> F[GitHub Pages]
+    F --> G[doc.preau.org]
+```
+
+A normal documentation update is therefore basically:
+
+```bash
+git add .
+git commit -m "docs: document Telegram integration"
+git push
+```
+
+A few moments later, the updated documentation is online.
+
+## Trade-offs
+
+There's a little more friction than editing a page directly in Notion or a wiki.
+
+On the other hand, I get versioning, portability, automated deployment, and documentation that lives close to the technical project.
+
+For this project, that's a trade-off I'm happy with.

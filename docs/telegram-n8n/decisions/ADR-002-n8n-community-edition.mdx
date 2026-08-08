@@ -1,0 +1,46 @@
+---
+sidebar_position: 2
+title: ADR-002 - n8n Community Edition
+---
+
+# ADR-002 — Use n8n Community Edition
+
+**Status:** Accepted
+
+## Context
+
+I need something to orchestrate the different pieces of the platform:
+
+```text
+Telegram → automation logic → Notion / APIs → Telegram
+```
+
+I could write everything myself, but I want to spend more time building useful automations than maintaining integration code.
+
+## Decision
+
+I'll use **n8n Community Edition**, running as a Docker container on my VPS.
+
+## Why?
+
+n8n already gives me most of what I need:
+
+- Telegram integration.
+- Notion integration.
+- Webhooks.
+- API calls.
+- Visual workflows.
+- Easy integration with AI services.
+- Lots of existing connectors.
+- Self-hosting.
+- No per-execution cost.
+
+It also gives me a nice balance between **low-code for simple things** and the ability to write code when a workflow needs something more specific.
+
+## Trade-offs
+
+The Community Edition doesn't include everything available in the paid versions of n8n.
+
+That's fine for now. This is a small personal platform, and I don't need enterprise collaboration or governance features.
+
+If the project grows beyond that, I can always revisit the decision.

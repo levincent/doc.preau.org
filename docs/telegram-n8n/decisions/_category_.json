@@ -1,0 +1,8 @@
+{
+  "label": "Decisions taken",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "description": "Documentation of decisions taken during the development process."
+  }
+}
