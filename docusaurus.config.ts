@@ -5,7 +5,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
 const config: Config = {
-  title: 'Vicnent Préau - Technical documentation',
+  title: 'Vincent Préau - Technical documentation',
   tagline: 'Notes, architecture and IT explorations',
   favicon: 'img/favicon.ico',
 
@@ -34,6 +34,13 @@ const config: Config = {
     defaultLocale: 'en',
     locales: ['en'],
   },
+
+    markdown: {
+    mermaid: true,
+  },
+
+  themes: ['@docusaurus/theme-mermaid'],
+
 
   presets: [
     [
@@ -75,7 +82,7 @@ const config: Config = {
       respectPrefersColorScheme: true,
     },
     navbar: {
-      title: 'My Site',
+      title: 'Vincent Préau',
       logo: {
         alt: 'My Site Logo',
         src: 'img/logo.svg',
@@ -144,6 +151,7 @@ const config: Config = {
       theme: prismThemes.github,
       darkTheme: prismThemes.dracula,
     },
+
   } satisfies Preset.ThemeConfig,
 };
 
