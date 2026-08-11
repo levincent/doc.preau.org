@@ -4,3 +4,236 @@ sidebar_label: 'Infrastructure'
 ---
 
 # Infrastructure
+
+The automation platform runs on a small self-managed VPS.
+
+The goal is to keep the infrastructure **simple, cheap, and easy to rebuild**. Most application components run as Docker containers, while the VPS mainly provides compute, networking, storage, and Docker itself.
+
+## Infrastructure Overview
+
+```mermaid
+flowchart TB
+    Internet((Internet))
+
+    subgraph DNS["Public DNS"]
+        N8NDNS["n8n.preau.org"]
+    end
+
+    subgraph VPS["OVHcloud VPS"]
+        FW["Firewall"]
+
+        subgraph Docker["Docker"]
+            Caddy["Caddy<br/>Reverse Proxy"]
+            N8N["n8n Community Edition"]
+            Data[("Persistent Data")]
+        end
+    end
+
+    Internet --> DNS
+    DNS --> FW
+    FW -->|"HTTPS :443"| Caddy
+    Caddy -->|"HTTP :5678"| N8N
+    N8N --> Data
+    N8N -->|"HTTPS :443"| Internet
+```
+
+## Hosting
+
+The platform is hosted on an **OVHcloud VPS**.
+
+A VPS was preferred over n8n Cloud because I want to keep control over the environment, keep recurring costs low, and use this project as an opportunity to manage a small production-like infrastructure.
+
+The VPS does not need significant resources. The initial workload consists mainly of a single n8n instance processing personal automation workflows.
+
+| Resource         | Initial Target |
+| ---------------- | -------------- |
+| Provider         | OVHcloud       |
+| Operating System | Ubuntu Server  |
+| Architecture     | x86-64         |
+| vCPU             | TBD            |
+| Memory           | TBD            |
+| Storage          | TBD            |
+| Public IPv4      | Yes            |
+| Backup           | TBD            |
+
+The VPS size can be increased later if additional services are added.
+
+## Network
+
+Only services that need to be reachable from the Internet should be exposed publicly.
+
+The initial network policy is:
+
+| Port | Protocol | Purpose               | Public                         |
+| ---: | -------- | --------------------- | ------------------------------ |
+|   22 | TCP      | SSH administration    | Yes, restricted where possible |
+|   80 | TCP      | HTTP / HTTPS redirect | Yes                            |
+|  443 | TCP      | HTTPS                 | Yes                            |
+| 5678 | TCP      | n8n                   | **No**                         |
+
+n8n listens on its internal port `5678`, but this port is not exposed directly to the Internet.
+
+External traffic reaches n8n through the reverse proxy.
+
+```text
+Internet
+   ↓
+TCP 443
+   ↓
+Caddy
+   ↓
+Docker network
+   ↓
+n8n:5678
+```
+
+## DNS
+
+A dedicated DNS record will point the n8n hostname to the public IP address of the VPS.
+
+```text
+n8n.preau.org
+      ↓
+A record
+      ↓
+VPS public IPv4
+```
+
+This provides a stable hostname independently of the underlying application configuration.
+
+## Reverse Proxy
+
+**Caddy** is used as the public entry point for the platform.
+
+Its responsibilities are:
+
+* Listen for incoming HTTP and HTTPS requests.
+* Manage TLS certificates automatically.
+* Redirect HTTP traffic to HTTPS.
+* Route requests to the appropriate Docker service.
+* Keep internal application ports hidden from the public Internet.
+
+Conceptually, the n8n configuration is very small:
+
+```text
+n8n.preau.org {
+    reverse_proxy n8n:5678
+}
+```
+
+This means that a request to:
+
+```text
+https://n8n.preau.org
+```
+
+is received by Caddy on port `443` and forwarded internally to n8n on port `5678`.
+
+Caddy also makes it easy to expose additional services later using other hostnames.
+
+```mermaid
+flowchart LR
+    Internet((Internet)) --> Caddy["Caddy :443"]
+
+    Caddy -->|"n8n.preau.org"| N8N["n8n :5678"]
+    Caddy -.->|"future-service.preau.org"| Future["Future Service"]
+```
+
+## Docker
+
+Application services run as Docker containers.
+
+The initial container architecture is intentionally small:
+
+```text
+Docker
+├── caddy
+└── n8n
+```
+
+Both containers share a private Docker network so Caddy can reach n8n without exposing the n8n port publicly.
+
+The setup will eventually be described using Docker Compose so that the complete application stack can be started with a simple command:
+
+```bash
+docker compose up -d
+```
+
+This also makes the infrastructure easier to reproduce if the VPS ever needs to be rebuilt.
+
+## Persistent Data
+
+Containers themselves are considered disposable.
+
+Data that must survive container recreation or upgrades is stored using persistent Docker volumes.
+
+At minimum, this includes:
+
+* n8n configuration.
+* Workflow definitions.
+* Credentials managed by n8n.
+* Execution-related data where required.
+* Caddy configuration and certificate data.
+
+The exact persistence and database strategy will be documented once implemented.
+
+## Secrets
+
+Secrets must never be stored directly in Git.
+
+This includes:
+
+* Telegram Bot tokens.
+* Notion API credentials.
+* n8n encryption keys.
+* API keys.
+* AI provider credentials.
+* Other authentication tokens.
+
+Runtime configuration will use environment variables and/or local environment files excluded from Git.
+
+For example:
+
+```text
+.env
+```
+
+will be excluded through:
+
+```text
+.gitignore
+```
+
+Only safe configuration templates may be committed:
+
+```text
+.env.example
+```
+
+## Infrastructure as Code
+
+The first version of the platform will favor simplicity over full Infrastructure as Code.
+
+The VPS itself may initially be provisioned manually, while the application stack is defined through Docker Compose and documented here.
+
+The goal is nevertheless to make the environment **rebuildable from documentation and configuration stored in Git**.
+
+A future iteration could introduce tools such as Terraform or Ansible if the infrastructure becomes complex enough to justify them.
+
+## Backup Strategy
+
+The backup strategy still needs to be finalized.
+
+At minimum, backups should cover the persistent data required to rebuild the n8n instance.
+
+The general recovery principle is:
+
+```mermaid
+flowchart LR
+    Git["Git Repository<br/>Configuration"] --> Rebuild["New VPS"]
+    Backup["Data Backup"] --> Rebuild
+    Rebuild --> Docker["Docker Compose"]
+    Docker --> Platform["Restored Platform"]
+```
+
+The objective is not necessarily to back up the entire VPS, but to make sure that **configuration + persistent data + documentation are enough to rebuild the platform**.
