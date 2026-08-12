@@ -119,7 +119,203 @@ Conceptually, the n8n configuration is very small:
 n8n.preau.org {
     reverse_proxy n8n:5678
 }
+```---
+
+sidebar_position: 4
+title: VPS Initial Setup
+description: Initial setup of the OVHcloud VPS hosting n8n Community.
+---------------------------------------------------------------------
+
+# VPS Initial Setup
+
+This page documents the initial setup of the OVHcloud VPS used to host the **n8n Community** automation platform.
+
+At the end of this setup, the server provides:
+
+* an up-to-date Ubuntu operating system;
+* SSH key-based authentication;
+* PostgreSQL;
+* n8n Community.
+
+## Architecture
+
+At this stage, the architecture is intentionally simple:
+
+```mermaid
+flowchart TB
+    Admin["Administrator"]
+
+    subgraph OVH["OVHcloud VPS"]
+        Ubuntu["Ubuntu Linux"]
+        SSH["SSH"]
+        n8n["n8n Community"]
+        PostgreSQL[("PostgreSQL")]
+
+        Ubuntu --> SSH
+        Ubuntu --> n8n
+        Ubuntu --> PostgreSQL
+        n8n --> PostgreSQL
+    end
+
+    Admin -->|"SSH"| SSH
 ```
+
+This is the initial bootstrap architecture. Additional components such as Docker, a reverse proxy, HTTPS, backups, Telegram, and Notion will be introduced later.
+
+---
+
+## 1. VPS Provisioning
+
+The VPS is hosted on **OVHcloud** with Ubuntu Linux as the operating system.
+
+Once the VPS has been provisioned, OVHcloud provides the information required to access the server, including:
+
+* the public IPv4 address;
+* the initial administration account;
+* the credentials required for the first SSH connection.
+
+### Connect to the VPS
+
+From a local terminal:
+
+```bash
+ssh <username>@<VPS_IP>
+```
+
+For example:
+
+```bash
+ssh ubuntu@203.0.113.10
+```
+
+During the first connection, SSH asks whether the server fingerprint should be trusted.
+
+Confirm with:
+
+```text
+yes
+```
+
+### Validation
+
+Check the installed operating system:
+
+```bash
+cat /etc/os-release
+```
+
+Check the hostname:
+
+```bash
+hostname
+```
+
+Check the server IP addresses:
+
+```bash
+hostname -I
+```
+
+---
+
+## 2. System Update
+
+Before installing application components, update the operating system and all installed packages.
+
+### Update the package index
+
+```bash
+sudo apt update
+```
+
+This retrieves the latest package information from the repositories configured on the server.
+
+### Install available updates
+
+```bash
+sudo apt upgrade -y
+```
+
+This installs available updates for packages already installed on the system.
+
+### Reboot the server
+
+After the initial system update:
+
+```bash
+sudo reboot
+```
+
+The SSH connection will be terminated while the server restarts.
+
+Wait for the VPS to become available again and reconnect:
+
+```bash
+ssh <username>@<VPS_IP>
+```
+
+### Validation
+
+Verify that the server is running:
+
+```bash
+uptime
+```
+
+Check whether additional package updates are available:
+
+```bash
+sudo apt update
+apt list --upgradable
+```
+
+---
+
+## 3. SSH Key Authentication
+
+SSH key authentication provides a secure and convenient way to connect to the VPS without entering the server password for every connection.
+
+The authentication mechanism works as follows:
+
+```mermaid
+flowchart LR
+    Workstation["Local Workstation"]
+    Private["Private Key"]
+    Public["Public Key"]
+    VPS["OVHcloud VPS"]
+
+    Workstation --> Private
+    Private -. "Authentication" .-> Public
+    Public --> VPS
+```
+
+The **private key remains exclusively on the local workstation**.
+
+Only the public key is installed on the VPS.
+
+### Generate an SSH key
+
+On the local workstation:
+
+```bash
+ssh-keygen -t ed25519 -f ~/.ssh/ovh_n8n
+```
+
+`Ed25519` is a modern public-key signature algorithm based on elliptic-curve cryptography. It is generally preferred over RSA for new SSH keys because it provides strong security with smaller keys and good performance.
+
+The name `25519` refers to the mathematical construction based on the prime number `2^255 - 19`.
+
+The command creates two files:
+
+```text
+~/.ssh/ovh_n8n
+~/.ssh/ovh_n8n.pub
+```
+
+The first file contains the **private key**.
+
+The `.pub` file contains the **public key**.
+
 
 This means that a request to:
 
